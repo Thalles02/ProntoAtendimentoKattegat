@@ -16,6 +16,7 @@ int main() {
     std::vector<pthread_t> threadsPacientes;
     std::vector<Paciente> pacientes;
     SalaEspera1 salaEspera1;
+    SalaEspera2 salaEspera2;
 
     for (int i = 1; i <= 10; ++i) {
         Paciente paciente;
@@ -47,6 +48,21 @@ int main() {
     for (auto& thread : threadsPacientes) {
         pthread_join(thread, nullptr); // Esperar que todas as threads dos pacientes terminem
     }
+
+    // Criar instâncias dos atendentes
+    Atendente atendente1;
+
+    // Simular chamada de pacientes pelos atendentes
+    std::thread atendenteThread1(&Atendente::chamarPaciente, &atendente1, std::ref(salaEspera2), std::ref(salaEspera1));
+
+
+    // Esperar que as threads dos atendentes terminem
+    atendenteThread1.join();
+
+    // Imprimir quantidade de pacientes nas salas de espera após as chamadas
+    salaEspera1.imprimirQuantidadePacientes();
+    salaEspera2.imprimirQuantidadePacientes();
+
 
     return 0;
 }

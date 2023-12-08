@@ -79,14 +79,6 @@ public:
 };
 
 
-class Atendente {
-public:
-    
-    void realizaCadastro(){
-
-    }
-
-};
 
 
 class Enfermeira {
@@ -125,7 +117,7 @@ public:
     }
 
     bool salaVazia(){
-        return pacientesEsperando.size() < maxSize;
+        return pacientesEsperando.size() == 0;
     }
 
     Paciente getPrioridade() {
@@ -141,16 +133,24 @@ public:
             }
         });
 
-        std::cout << "Pacientes ordenados por prioridade:" << std::endl;
-        for (size_t i = 0; i < pacientesEsperando.size(); ++i) {
-            const Paciente& paciente = pacientesEsperando[i];
-            std::cout << "Índice: " << i << ", ID: " << paciente.id << ", Prioridade: " << paciente.tipoPrioridade << std::endl;
-            // Imprima outras informações relevantes do paciente, se necessário
-        }
 
         // Retorna o paciente mais prioritário (primeiro da lista ordenada)
         return pacientesEsperando.front();
     }
+
+    void removerPaciente(const Paciente& paciente) {
+        auto it = std::remove_if(pacientesEsperando.begin(), pacientesEsperando.end(), [&paciente](const Paciente& p) {
+            return p.id == paciente.id;
+        });
+
+        if (it != pacientesEsperando.end()) {
+            pacientesEsperando.erase(it, pacientesEsperando.end());
+            std::cout << "Paciente " << paciente.id << " removido da Sala de Espera 1." << std::endl;
+        } else {
+            std::cout << "Paciente " << paciente.id << " não encontrado na Sala de Espera 1." << std::endl;
+        }
+    }
+
 
 
 };
@@ -161,8 +161,62 @@ private:
 public:
     int maxSize = 50;
 
+    void adicionarPaciente(const Paciente& paciente) {
+
+        if (pacientesEsperando.size() >= maxSize) {
+            std::cout << "Sala de Espera 2 está cheia." << std::endl;
+        } else {
+            pacientesEsperando.push_back(paciente);
+            std::cout << "Paciente " << paciente.id << " adicionado à Sala de Espera 2." << std::endl;
+        }
+    }
+
+    void imprimirQuantidadePacientes() {
+        std::cout << "Quantidade de pacientes na Sala de Espera 2: " << pacientesEsperando.size() << std::endl;
+    }
+
+    bool salaCheia() {
+        return pacientesEsperando.size() >= maxSize;
+    }
+
     bool salaVazia(){
-        return pacientesEsperando.size() < maxSize;
+        return pacientesEsperando.size() == 0;
+    }
+
+    void removerPaciente(const Paciente& paciente) {
+        auto it = std::remove_if(pacientesEsperando.begin(), pacientesEsperando.end(), [&paciente](const Paciente& p) {
+            return p.id == paciente.id;
+        });
+
+        if (it != pacientesEsperando.end()) {
+            pacientesEsperando.erase(it, pacientesEsperando.end());
+            std::cout << "Paciente " << paciente.id << " removido da Sala de Espera 2." << std::endl;
+        } else {
+            std::cout << "Paciente " << paciente.id << " não encontrado na Sala de Espera 2." << std::endl;
+        }
+    }
+
+};
+
+
+class Atendente {
+public:
+    
+    void chamarPaciente(SalaEspera2& salaEspera2, SalaEspera1& salaEspera1) {
+        while (!salaEspera2.salaCheia() && !salaEspera1.salaVazia()) {
+            // Verifica se há pacientes na sala de espera
+            Paciente paciente = salaEspera1.getPrioridade();
+
+            // Simula o tempo de atendimento randomicamente entre 1 e 3 segundos
+            int tempoAtendimento = (rand() % 3) + 1;
+            // Realiza o atendimento
+            std::this_thread::sleep_for(std::chrono::seconds(tempoAtendimento));
+
+
+            // Remove o paciente atendido da sala de espera
+            salaEspera1.removerPaciente(paciente);
+            salaEspera2.adicionarPaciente(paciente);
+        }
     }
 
 };
