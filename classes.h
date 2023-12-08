@@ -5,6 +5,7 @@
 #include <pthread.h> // Para usar pthread
 #include <semaphore.h> // Para usar semáforos
 #include <chrono>
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 
@@ -80,8 +81,13 @@ public:
 
 class Atendente {
 public:
-    // Métodos e atributos dos atendentes podem ser adicionados aqui
+    
+    void realizaCadastro(){
+
+    }
+
 };
+
 
 class Enfermeira {
 public:
@@ -117,9 +123,46 @@ public:
     bool salaCheia() {
         return pacientesEsperando.size() >= maxSize;
     }
+
+    bool salaVazia(){
+        return pacientesEsperando.size() < maxSize;
+    }
+
+    Paciente getPrioridade() {
+        std::sort(pacientesEsperando.begin(), pacientesEsperando.end(), [](const Paciente& p1, const Paciente& p2) {
+            // Primeiro, ordene por prioridade
+            if (p1.tipoPrioridade == "Prioritario" && p2.tipoPrioridade != "Prioritario") {
+                return true;
+            } else if (p1.tipoPrioridade != "Prioritario" && p2.tipoPrioridade == "Prioritario") {
+                return false;
+            } else {
+                // Se ambos forem prioritários ou não prioritários, ordene com base no id (ordem de chegada)
+                return p1.id < p2.id;
+            }
+        });
+
+        std::cout << "Pacientes ordenados por prioridade:" << std::endl;
+        for (size_t i = 0; i < pacientesEsperando.size(); ++i) {
+            const Paciente& paciente = pacientesEsperando[i];
+            std::cout << "Índice: " << i << ", ID: " << paciente.id << ", Prioridade: " << paciente.tipoPrioridade << std::endl;
+            // Imprima outras informações relevantes do paciente, se necessário
+        }
+
+        // Retorna o paciente mais prioritário (primeiro da lista ordenada)
+        return pacientesEsperando.front();
+    }
+
+
 };
 
 class SalaEspera2 {
+private:
+    std::vector<Paciente> pacientesEsperando;
 public:
+    int maxSize = 50;
+
+    bool salaVazia(){
+        return pacientesEsperando.size() < maxSize;
+    }
 
 };
