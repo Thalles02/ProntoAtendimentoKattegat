@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <mutex>
+#include <atomic> 
+
 
 
 using namespace std;
@@ -18,6 +21,9 @@ private:
     sem_t semaforoRetiradaSenha;
 public:
     int id;
+    string nome;
+    int idade;
+    string motivoVisita;
     string tipoPrioridade; // Normal ou prioritário
     bool temNecessidadesEspeciais;
     bool mulherComFilhoDeColo;
@@ -28,6 +34,19 @@ public:
 
     Paciente() {
         sem_init(&semaforoRetiradaSenha, 0, 1); // Inicialização do semáforo com 1 (indicando acesso exclusivo)
+    }
+
+    void coletarInformacoes() {
+        cout << "Coletando informações do paciente " << id << "." << endl;
+        
+        // Simulação da coleta de informações. Em um cenário real, esses dados viriam de um formulário ou seriam inseridos por um funcionário.
+        nome = "Paciente_" + to_string(id);
+        idade = rand() % 100; // Idade aleatória entre 0 e 99
+        motivoVisita = "Motivo_" + to_string(rand() % 5); // Motivo fictício
+
+        cout << "Nome: " << nome << ", Idade: " << idade << ", Motivo da Visita: " << motivoVisita << endl;
+
+        // Aqui você pode adicionar mais lógica se necessário.
     }
 
     // Método para retirar a senha
@@ -81,10 +100,8 @@ public:
 
 
 
-class Enfermeira {
-public:
-    // Métodos e atributos das enfermeiras podem ser adicionados aqui
-};
+
+
 
 class Medico {
 public:
@@ -94,11 +111,13 @@ public:
 
 class SalaEspera1 {
 private:
-    std::vector<Paciente> pacientesEsperando;
+    vector<Paciente> pacientesEsperando;
+    mutable mutex mtx; // mutex para sincronização
 public:
     int maxSize = 50;
 
     void adicionarPaciente(const Paciente& paciente) {
+        std::lock_guard<std::mutex> guard(mtx);
 
         if (pacientesEsperando.size() >= maxSize) {
             std::cout << "Sala de Espera 1 está cheia." << std::endl;
@@ -109,18 +128,22 @@ public:
     }
 
     void imprimirQuantidadePacientes() {
+        lock_guard<mutex> guard(mtx);
         std::cout << "Quantidade de pacientes na Sala de Espera 1: " << pacientesEsperando.size() << std::endl;
     }
 
     bool salaCheia() {
+        lock_guard<mutex> guard(mtx);
         return pacientesEsperando.size() >= maxSize;
     }
 
     bool salaVazia(){
+        lock_guard<mutex> guard(mtx);
         return pacientesEsperando.size() == 0;
     }
 
     Paciente getPrioridade() {
+        lock_guard<mutex> guard(mtx);
         std::sort(pacientesEsperando.begin(), pacientesEsperando.end(), [](const Paciente& p1, const Paciente& p2) {
             // Primeiro, ordene por prioridade
             if (p1.tipoPrioridade == "Prioritario" && p2.tipoPrioridade != "Prioritario") {
@@ -139,6 +162,7 @@ public:
     }
 
     void removerPaciente(const Paciente& paciente) {
+        lock_guard<mutex> guard(mtx);
         auto it = std::remove_if(pacientesEsperando.begin(), pacientesEsperando.end(), [&paciente](const Paciente& p) {
             return p.id == paciente.id;
         });
@@ -157,11 +181,13 @@ public:
 
 class SalaEspera2 {
 private:
-    std::vector<Paciente> pacientesEsperando;
+    vector<Paciente> pacientesEsperando;
+    mutex mtx; // mutex para sincronização
 public:
     int maxSize = 50;
 
     void adicionarPaciente(const Paciente& paciente) {
+        lock_guard<mutex> guard(mtx);
 
         if (pacientesEsperando.size() >= maxSize) {
             std::cout << "Sala de Espera 2 está cheia." << std::endl;
@@ -171,19 +197,42 @@ public:
         }
     }
 
+    Paciente getPrioridade() {
+        lock_guard<mutex> guard(mtx);
+        std::sort(pacientesEsperando.begin(), pacientesEsperando.end(), [](const Paciente& p1, const Paciente& p2) {
+            // Primeiro, ordene por prioridade
+            if (p1.tipoPrioridade == "Prioritario" && p2.tipoPrioridade != "Prioritario") {
+                return true;
+            } else if (p1.tipoPrioridade != "Prioritario" && p2.tipoPrioridade == "Prioritario") {
+                return false;
+            } else {
+                // Se ambos forem prioritários ou não prioritários, ordene com base no id (ordem de chegada)
+                return p1.id < p2.id;
+            }
+        });
+
+
+        // Retorna o paciente mais prioritário (primeiro da lista ordenada)
+        return pacientesEsperando.front();
+    }
+
     void imprimirQuantidadePacientes() {
+        lock_guard<mutex> guard(mtx);
         std::cout << "Quantidade de pacientes na Sala de Espera 2: " << pacientesEsperando.size() << std::endl;
     }
 
     bool salaCheia() {
+        lock_guard<mutex> guard(mtx);
         return pacientesEsperando.size() >= maxSize;
     }
 
     bool salaVazia(){
+        lock_guard<mutex> guard(mtx);
         return pacientesEsperando.size() == 0;
     }
 
     void removerPaciente(const Paciente& paciente) {
+        lock_guard<mutex> guard(mtx);
         auto it = std::remove_if(pacientesEsperando.begin(), pacientesEsperando.end(), [&paciente](const Paciente& p) {
             return p.id == paciente.id;
         });
@@ -200,23 +249,60 @@ public:
 
 
 class Atendente {
+private:
+    sem_t semaforoAtendimento;
+
 public:
-    
-    void chamarPaciente(SalaEspera2& salaEspera2, SalaEspera1& salaEspera1) {
-        while (!salaEspera2.salaCheia() && !salaEspera1.salaVazia()) {
-            // Verifica se há pacientes na sala de espera
-            Paciente paciente = salaEspera1.getPrioridade();
-
-            // Simula o tempo de atendimento randomicamente entre 1 e 3 segundos
-            int tempoAtendimento = (rand() % 3) + 1;
-            // Realiza o atendimento
-            std::this_thread::sleep_for(std::chrono::seconds(tempoAtendimento));
-
-
-            // Remove o paciente atendido da sala de espera
-            salaEspera1.removerPaciente(paciente);
-            salaEspera2.adicionarPaciente(paciente);
-        }
+    Atendente() {
+        sem_init(&semaforoAtendimento, 0, 1); // semáforo para controle de acesso
     }
 
+    void chamarPaciente(SalaEspera2& salaEspera2, SalaEspera1& salaEspera1) {
+    while (true) {
+            if (salaEspera1.salaVazia()) {
+                break;
+            }
+            if (salaEspera2.salaCheia()) {
+                continue; // Aguarda até que haja espaço na SalaEspera2
+            }
+            Paciente paciente = salaEspera1.getPrioridade();
+            salaEspera1.removerPaciente(paciente);
+            
+            int tempoAtendimento = (rand() % 3) + 1;
+            this_thread::sleep_for(chrono::seconds(tempoAtendimento));
+
+            salaEspera2.adicionarPaciente(paciente);
+        }
+}
+
+
+
+    ~Atendente() {
+        sem_destroy(&semaforoAtendimento); // destruir o semáforo
+    }
+};
+
+
+
+class Enfermeira {
+// private:
+//     atomic<bool> finalizarThread{false};    
+// public:
+//     void chamarPacienteDaTriagem(SalaEspera2& salaEspera2) {
+//         while (!finalizarThread) {
+//             if (salaEspera2.salaVazia()) {
+//                 this_thread::sleep_for(chrono::seconds(1));
+//                 continue;
+//             }
+
+//             Paciente paciente = salaEspera2.getPrioridade();
+//             cout << "Enfermeira chamando paciente " << paciente.id << " para triagem." << endl;
+//             this_thread::sleep_for(chrono::seconds(1));
+//             salaEspera2.removerPaciente(paciente);
+//         }
+//     }
+
+//     void finalizar() {
+//         finalizarThread = true;
+//     }
 };
