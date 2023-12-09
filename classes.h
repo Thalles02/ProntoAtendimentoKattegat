@@ -37,7 +37,7 @@ public:
     }
 
     void coletarInformacoes() {
-        cout << "Coletando informações do paciente " << id << "." << endl;
+        cout << endl << "Coletando informações do paciente " << id << "." << endl;
         
         // Simulação da coleta de informações. Em um cenário real, esses dados viriam de um formulário ou seriam inseridos por um funcionário.
         nome = "Paciente_" + to_string(id);
@@ -89,7 +89,7 @@ public:
         // Imprimir outros detalhes do paciente, se necessário
 
         cout << ", Momento da retirada: " << momentoRetiradaSenha;
-        cout << endl;
+        cout << endl << endl;
     }
 
     ~Paciente() {
@@ -120,16 +120,16 @@ public:
         std::lock_guard<std::mutex> guard(mtx);
 
         if (pacientesEsperando.size() >= maxSize) {
-            std::cout << "Sala de Espera 1 está cheia." << std::endl;
+            std::cout << "Sala de Espera 1 está cheia." << std::endl << endl;
         } else {
             pacientesEsperando.push_back(paciente);
-            std::cout << "Paciente " << paciente.id << " adicionado à Sala de Espera 1." << std::endl;
+            std::cout << "Paciente " << paciente.id << " adicionado à Sala de Espera 1." << std::endl << endl;
         }
     }
 
     void imprimirQuantidadePacientes() {
         lock_guard<mutex> guard(mtx);
-        std::cout << "Quantidade de pacientes na Sala de Espera 1: " << pacientesEsperando.size() << std::endl;
+        std::cout << "Quantidade de pacientes na Sala de Espera 1: " << pacientesEsperando.size() << std::endl << endl;
     }
 
     bool salaCheia() {
@@ -144,17 +144,15 @@ public:
 
     Paciente getPrioridade() {
         lock_guard<mutex> guard(mtx);
+        if (pacientesEsperando.empty()) {
+            throw std::runtime_error("Sala de espera vazia.");
+        }
         std::sort(pacientesEsperando.begin(), pacientesEsperando.end(), [](const Paciente& p1, const Paciente& p2) {
-            // Primeiro, ordene por prioridade
-            if (p1.tipoPrioridade == "Prioritario" && p2.tipoPrioridade != "Prioritario") {
-                return true;
-            } else if (p1.tipoPrioridade != "Prioritario" && p2.tipoPrioridade == "Prioritario") {
-                return false;
-            } else {
-                // Se ambos forem prioritários ou não prioritários, ordene com base no id (ordem de chegada)
-                return p1.id < p2.id;
-            }
-        });
+        if (p1.tipoPrioridade != p2.tipoPrioridade) {
+            return p1.tipoPrioridade == "Prioritario";
+        }
+        return p1.id < p2.id;
+    });
 
 
         // Retorna o paciente mais prioritário (primeiro da lista ordenada)
@@ -169,9 +167,9 @@ public:
 
         if (it != pacientesEsperando.end()) {
             pacientesEsperando.erase(it, pacientesEsperando.end());
-            std::cout << "Paciente " << paciente.id << " removido da Sala de Espera 1." << std::endl;
+            std::cout << "Paciente " << paciente.id << " removido da Sala de Espera 1." << std::endl << endl;
         } else {
-            std::cout << "Paciente " << paciente.id << " não encontrado na Sala de Espera 1." << std::endl;
+            std::cout << "Paciente " << paciente.id << " não encontrado na Sala de Espera 1." << std::endl << endl;
         }
     }
 
@@ -190,25 +188,23 @@ public:
         lock_guard<mutex> guard(mtx);
 
         if (pacientesEsperando.size() >= maxSize) {
-            std::cout << "Sala de Espera 2 está cheia." << std::endl;
+            std::cout << "Sala de Espera 2 está cheia." << std::endl << endl;
         } else {
             pacientesEsperando.push_back(paciente);
-            std::cout << "Paciente " << paciente.id << " adicionado à Sala de Espera 2." << std::endl;
+            std::cout << "Paciente " << paciente.id << " adicionado à Sala de Espera 2." << std::endl << endl;
         }
     }
 
     Paciente getPrioridade() {
         lock_guard<mutex> guard(mtx);
+        if (pacientesEsperando.empty()) {
+            throw std::runtime_error("Sala de espera vazia.");
+        }
         std::sort(pacientesEsperando.begin(), pacientesEsperando.end(), [](const Paciente& p1, const Paciente& p2) {
-            // Primeiro, ordene por prioridade
-            if (p1.tipoPrioridade == "Prioritario" && p2.tipoPrioridade != "Prioritario") {
-                return true;
-            } else if (p1.tipoPrioridade != "Prioritario" && p2.tipoPrioridade == "Prioritario") {
-                return false;
-            } else {
-                // Se ambos forem prioritários ou não prioritários, ordene com base no id (ordem de chegada)
-                return p1.id < p2.id;
+        if (p1.tipoPrioridade != p2.tipoPrioridade) {
+            return p1.tipoPrioridade == "Prioritario";
             }
+            return p1.id < p2.id;
         });
 
 
@@ -218,7 +214,7 @@ public:
 
     void imprimirQuantidadePacientes() {
         lock_guard<mutex> guard(mtx);
-        std::cout << "Quantidade de pacientes na Sala de Espera 2: " << pacientesEsperando.size() << std::endl;
+        std::cout << "Quantidade de pacientes na Sala de Espera 2: " << pacientesEsperando.size() << std::endl << endl;
     }
 
     bool salaCheia() {
@@ -239,9 +235,9 @@ public:
 
         if (it != pacientesEsperando.end()) {
             pacientesEsperando.erase(it, pacientesEsperando.end());
-            std::cout << "Paciente " << paciente.id << " removido da Sala de Espera 2." << std::endl;
+            std::cout << "Paciente " << paciente.id << " removido da Sala de Espera 2." << std::endl << endl;
         } else {
-            std::cout << "Paciente " << paciente.id << " não encontrado na Sala de Espera 2." << std::endl;
+            std::cout << "Paciente " << paciente.id << " não encontrado na Sala de Espera 2." << std::endl << endl;
         }
     }
 
@@ -254,11 +250,11 @@ private:
 
 public:
     Atendente() {
-        sem_init(&semaforoAtendimento, 0, 1); // semáforo para controle de acesso
+        sem_init(&semaforoAtendimento, 0, 1); // Semáforo para controle de acesso
     }
 
     void chamarPaciente(SalaEspera2& salaEspera2, SalaEspera1& salaEspera1) {
-    while (true) {
+        while (true) {
             if (salaEspera1.salaVazia()) {
                 break;
             }
@@ -273,14 +269,13 @@ public:
 
             salaEspera2.adicionarPaciente(paciente);
         }
-}
-
-
+    }
 
     ~Atendente() {
-        sem_destroy(&semaforoAtendimento); // destruir o semáforo
+        sem_destroy(&semaforoAtendimento); // Destruir o semáforo
     }
 };
+
 
 
 
@@ -296,7 +291,7 @@ class Enfermeira {
 //             }
 
 //             Paciente paciente = salaEspera2.getPrioridade();
-//             cout << "Enfermeira chamando paciente " << paciente.id << " para triagem." << endl;
+//             cout << "Enfermeira chamando paciente " << paciente.id << " para triagem." << endl << endl;
 //             this_thread::sleep_for(chrono::seconds(1));
 //             salaEspera2.removerPaciente(paciente);
 //         }
