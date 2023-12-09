@@ -17,6 +17,8 @@ int main() {
     SalaEspera1 salaEspera1;
     SalaEspera2 salaEspera2;
     SalaEspera3 salaEspera3;
+    Hospital hospital;
+    atomic<bool> finalizarMedicos(false);
     atomic<bool> notificacao(false);
 
     // Instância das enfermeiras e atendentes
@@ -49,6 +51,38 @@ int main() {
     thread enfermeiraThread1(&Enfermeira::chamarPacienteDaTriagem, &enfermeira1, ref(salaEspera2), ref(salaEspera3));
     thread enfermeiraThread2(&Enfermeira::chamarPacienteDaTriagem, &enfermeira2, ref(salaEspera2), ref(salaEspera3));
 
+    // Thread para médico clínico
+thread clinicoThread([&hospital, &finalizarMedicos]() {
+    while (!finalizarMedicos || !hospital.filaClinicosVazia()) {
+        cout << "Clínico verificando fila..." << endl;
+        if (!hospital.filaClinicosVazia()) {
+            Paciente paciente = hospital.getProximoPacienteClinico();
+            cout << "Clínico atendendo paciente " << paciente.id << " - Prioridade: " << paciente.prioridadeAtendimento << endl;
+            // Simular atendimento
+            this_thread::sleep_for(chrono::milliseconds(200));
+        } else {
+            cout << "Fila de Clínicos vazia, aguardando pacientes..." << endl;
+        }
+        this_thread::sleep_for(chrono::milliseconds(500));
+    }
+});
+
+// Thread para médico ortopedista
+thread ortopedistaThread([&hospital, &finalizarMedicos]() {
+   while (!finalizarMedicos || !hospital.filaOrtopedistasVazia()) {
+        cout << "Ortopedista verificando fila..." << endl;
+        if (!hospital.filaOrtopedistasVazia()) {
+            Paciente paciente = hospital.getProximoPacienteOrtopedista();
+            cout << "Ortopedista atendendo paciente " << paciente.id << " - Prioridade: " << paciente.prioridadeAtendimento << endl;
+            // Simular atendimento
+            this_thread::sleep_for(chrono::milliseconds(200));
+        } else {
+            cout << "Fila de Ortopedistas vazia, aguardando pacientes..." << endl;
+        }
+        this_thread::sleep_for(chrono::milliseconds(500));
+    }
+});
+
     // Esperar que todas as threads dos pacientes terminem
     for (auto& th : threadsPacientes) {
         pthread_join(th, nullptr);
@@ -64,6 +98,10 @@ int main() {
     while (!salaEspera2.salaVazia()) {
     this_thread::sleep_for(chrono::seconds(1));
 }
+
+    finalizarMedicos = true;
+    clinicoThread.join();
+    ortopedistaThread.join();
 
     // Encerrar threads das enfermeiras
     enfermeira1.finalizar();
