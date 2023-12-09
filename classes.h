@@ -13,6 +13,7 @@
 
 
 
+
 using namespace std;
 
 class Paciente {
@@ -180,7 +181,8 @@ public:
 class SalaEspera2 {
 private:
     vector<Paciente> pacientesEsperando;
-    mutex mtx; // mutex para sincronização
+    mutex mtx; // Mutex para sincronização
+    atomic<bool> atendentesTerminaramFlag{false};
 public:
     int maxSize = 50;
 
@@ -195,20 +197,32 @@ public:
         }
     }
 
+
+    void marcarAtendentesTerminados() {
+        atendentesTerminaramFlag = true;
+    }
+
+    bool atendentesTerminaram() const {
+        return atendentesTerminaramFlag.load();
+    }
+
+    bool processamentoCompleto() {
+        lock_guard<mutex> guard(mtx);
+        return pacientesEsperando.empty() && atendentesTerminaramFlag;
+    }
+
     Paciente getPrioridade() {
         lock_guard<mutex> guard(mtx);
         if (pacientesEsperando.empty()) {
             throw std::runtime_error("Sala de espera vazia.");
         }
         std::sort(pacientesEsperando.begin(), pacientesEsperando.end(), [](const Paciente& p1, const Paciente& p2) {
-        if (p1.tipoPrioridade != p2.tipoPrioridade) {
-            return p1.tipoPrioridade == "Prioritario";
+            if (p1.tipoPrioridade != p2.tipoPrioridade) {
+                return p1.tipoPrioridade == "Prioritario";
             }
             return p1.id < p2.id;
         });
 
-
-        // Retorna o paciente mais prioritário (primeiro da lista ordenada)
         return pacientesEsperando.front();
     }
 
@@ -243,33 +257,75 @@ public:
 
 };
 
+class Enfermeira {
+private:
+    atomic<bool> finalizarThread{false};    
+    atomic<bool>& notificacao;
+
+public:
+    Enfermeira(atomic<bool>& notif) : notificacao(notif) {}
+
+    void chamarPacienteDaTriagem(SalaEspera2& salaEspera2) {
+        while (!finalizarThread) {
+            if (!salaEspera2.salaVazia()) {
+                try {
+                    Paciente paciente = salaEspera2.getPrioridade();
+                    cout << "Enfermeira chamando paciente " << paciente.id << " para triagem." << endl;
+                    salaEspera2.removerPaciente(paciente);
+                } catch (const std::runtime_error& e) {
+                    // Tratamento de erro para quando a sala estiver vazia
+                    cout << e.what() << endl;
+                    this_thread::sleep_for(chrono::milliseconds(100));
+                }
+            } else if (!salaEspera2.atendentesTerminaram()) {
+                this_thread::sleep_for(chrono::milliseconds(100));
+            }
+        }
+    }
+
+    void finalizar() {
+        finalizarThread = true;
+        notificacao = true; // Certifique-se de acordar a enfermeira se ela estiver esperando
+    }
+};
+
+
+
+
+
+
 
 class Atendente {
 private:
     sem_t semaforoAtendimento;
+    atomic<bool>& notificacao; // Adicione esta linha
 
 public:
-    Atendente() {
+    // Construtor modificado para aceitar a referência da variável de notificação
+    Atendente(atomic<bool>& notif) : notificacao(notif) {
         sem_init(&semaforoAtendimento, 0, 1); // Semáforo para controle de acesso
     }
 
     void chamarPaciente(SalaEspera2& salaEspera2, SalaEspera1& salaEspera1) {
-        while (true) {
-            if (salaEspera1.salaVazia()) {
-                break;
-            }
-            if (salaEspera2.salaCheia()) {
-                continue; // Aguarda até que haja espaço na SalaEspera2
-            }
-            Paciente paciente = salaEspera1.getPrioridade();
-            salaEspera1.removerPaciente(paciente);
-            
-            int tempoAtendimento = (rand() % 3) + 1;
-            this_thread::sleep_for(chrono::seconds(tempoAtendimento));
-
-            salaEspera2.adicionarPaciente(paciente);
+    while (true) {
+        if (salaEspera1.salaVazia()) {
+            break;
         }
+        if (salaEspera2.salaCheia()) {
+            continue;
+        }
+        Paciente paciente = salaEspera1.getPrioridade();
+        salaEspera1.removerPaciente(paciente);
+        
+        int tempoAtendimento = (rand() % 3) + 1;
+        this_thread::sleep_for(chrono::seconds(tempoAtendimento));
+
+        salaEspera2.adicionarPaciente(paciente);
+        notificacao = true; // Sinalizar as enfermeiras
     }
+    salaEspera2.marcarAtendentesTerminados();
+}
+
 
     ~Atendente() {
         sem_destroy(&semaforoAtendimento); // Destruir o semáforo
@@ -279,25 +335,3 @@ public:
 
 
 
-class Enfermeira {
-// private:
-//     atomic<bool> finalizarThread{false};    
-// public:
-//     void chamarPacienteDaTriagem(SalaEspera2& salaEspera2) {
-//         while (!finalizarThread) {
-//             if (salaEspera2.salaVazia()) {
-//                 this_thread::sleep_for(chrono::seconds(1));
-//                 continue;
-//             }
-
-//             Paciente paciente = salaEspera2.getPrioridade();
-//             cout << "Enfermeira chamando paciente " << paciente.id << " para triagem." << endl << endl;
-//             this_thread::sleep_for(chrono::seconds(1));
-//             salaEspera2.removerPaciente(paciente);
-//         }
-//     }
-
-//     void finalizar() {
-//         finalizarThread = true;
-//     }
-};
