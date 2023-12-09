@@ -53,6 +53,7 @@ public:
     bool mulherComFilhoDeColo;
     int numeroSenha;
     std::string momentoRetiradaSenha;
+    string especialidadeEncaminhamento;
 
     
 
@@ -117,7 +118,7 @@ public:
         cout << endl << endl;
     }
 
-    void avaliarSinaisVitais(Clinico& clinico, Ortopedista& ortopedista);
+    void avaliarSinaisVitais();
 };
 
 
@@ -130,26 +131,23 @@ void Ortopedista::atenderPaciente(Paciente& paciente) {
     cout << "Ortopedista atendendo paciente " << paciente.id << endl;
 }
 
-void Paciente::avaliarSinaisVitais(Clinico& clinico, Ortopedista& ortopedista) {
+void Paciente::avaliarSinaisVitais() {
         // Simular a avaliação dos sinais vitais
 
-        temperatura = (rand() % 5) + 36; // Temperatura aleatória entre 36 e 40
-        batimentoCardiacos = (rand() % 61) + 60; // Batimentos cardíacos aleatórios entre 60 e 120
+    temperatura = (rand() % 5) + 36; // Temperatura aleatória entre 36 e 40
+    batimentoCardiacos = (rand() % 61) + 60; // Batimentos cardíacos aleatórios entre 60 e 120
+    int aleatorio = rand() % 2; // Gera 0 ou 1
 
-        // Determinar a prioridade de atendimento baseado em alguma lógica
-        if (temperatura > 38 || batimentoCardiacos > 100) {
-            prioridadeAtendimento = "Emergência";
-        } else if (temperatura > 37 || batimentoCardiacos > 80) {
-            prioridadeAtendimento = "Grave";
-        } else {
-            prioridadeAtendimento = "Normal";
-        }
+    especialidadeEncaminhamento = (aleatorio == 0) ? "Clinico" : "Ortopedista";
 
-        if (rand() % 2 == 0) {
-                        clinico.atenderPaciente(*this);
-                    } else {
-                        ortopedista.atenderPaciente(*this);
-                    }
+    // Determinar a prioridade de atendimento baseado em alguma lógica
+    if (temperatura > 38 || batimentoCardiacos > 100) {
+        prioridadeAtendimento = "Emergência";
+    } else if (temperatura > 37 || batimentoCardiacos > 80) {
+        prioridadeAtendimento = "Grave";
+    } else {
+        prioridadeAtendimento = "Normal";
+    }
     }
 
 
@@ -311,44 +309,48 @@ public:
 
 class Enfermeira {
 private:
-    atomic<bool> finalizarThread{false};    
+    atomic<bool> finalizarThread{false};
     atomic<bool>& notificacao;
+    bool atenderPorClinico = true; // Novo sinalizador para alternar entre clínico e ortopedista
 
 public:
-
-
     Enfermeira(atomic<bool>& notif) : notificacao(notif) {}
 
     void chamarPacienteDaTriagem(SalaEspera2& salaEspera2) {
         Clinico clinico;
         Ortopedista ortopedista;
-        while (!finalizarThread) {
+
+        while (!finalizarThread || !salaEspera2.salaVazia()) {
             if (!salaEspera2.salaVazia()) {
                 try {
-                    
                     Paciente paciente = salaEspera2.getPrioridade();
-                    paciente.avaliarSinaisVitais(clinico, ortopedista);
+                    salaEspera2.removerPaciente(paciente); // Mover esta linha para cima
                     cout << "Enfermeira chamando paciente " << paciente.id << " para triagem." << endl;
-                    salaEspera2.removerPaciente(paciente);
 
-                    if (!salaEspera2.salaVazia()) {
-                    Paciente paciente = salaEspera2.getPrioridade();
-                    
+                    // Triagem
+                    paciente.avaliarSinaisVitais();
 
                     // Encaminhar para clínico ou ortopedista
-                    
-            }
+                    if (paciente.especialidadeEncaminhamento == "Clinico") {
+                        clinico.atenderPaciente(paciente);
+                    } else {
+                        ortopedista.atenderPaciente(paciente);
+                    }
+
+                    // Remover a linha que estava aqui para evitar chamadas duplas
+
+                    // Adiciona uma pequena pausa para simular o processamento
+                    this_thread::sleep_for(chrono::milliseconds(100));
                 } catch (const std::runtime_error& e) {
-                    // Tratamento de erro para quando a sala estiver vazia
                     cout << e.what() << endl;
                     this_thread::sleep_for(chrono::milliseconds(100));
                 }
-            } else if (!salaEspera2.atendentesTerminaram()) {
-                this_thread::sleep_for(chrono::milliseconds(100));
             }
+            this_thread::sleep_for(chrono::milliseconds(100));
         }
     }
 
+    
     void finalizar() {
         finalizarThread = true;
         notificacao = true; // Certifique-se de acordar a enfermeira se ela estiver esperando

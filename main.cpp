@@ -9,7 +9,7 @@
 
 using namespace std;
 
-const int NUM_PACIENTES = 100;
+const int NUM_PACIENTES = 20;
 
 int main() {
     vector<pthread_t> threadsPacientes;
@@ -57,8 +57,12 @@ int main() {
     atendenteThread1.join();
     atendenteThread2.join();
 
-    // Marcar como finalizado
-    // salaEspera2.marcarFinalizado();
+    // Marcar atendentes como terminados
+    salaEspera2.marcarAtendentesTerminados();
+
+    while (!salaEspera2.salaVazia()) {
+    this_thread::sleep_for(chrono::seconds(1));
+}
 
     // Encerrar threads das enfermeiras
     enfermeira1.finalizar();
