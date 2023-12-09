@@ -16,6 +16,7 @@ int main() {
     vector<Paciente> pacientes;
     SalaEspera1 salaEspera1;
     SalaEspera2 salaEspera2;
+    SalaEspera3 salaEspera3;
     atomic<bool> notificacao(false);
 
     // Instância das enfermeiras e atendentes
@@ -45,8 +46,8 @@ int main() {
     thread atendenteThread2(&Atendente::chamarPaciente, &atendente2, ref(salaEspera2), ref(salaEspera1));
 
     // Threads das enfermeiras
-    thread enfermeiraThread1(&Enfermeira::chamarPacienteDaTriagem, &enfermeira1, ref(salaEspera2));
-    thread enfermeiraThread2(&Enfermeira::chamarPacienteDaTriagem, &enfermeira2, ref(salaEspera2));
+    thread enfermeiraThread1(&Enfermeira::chamarPacienteDaTriagem, &enfermeira1, ref(salaEspera2), ref(salaEspera3));
+    thread enfermeiraThread2(&Enfermeira::chamarPacienteDaTriagem, &enfermeira2, ref(salaEspera2), ref(salaEspera3));
 
     // Esperar que todas as threads dos pacientes terminem
     for (auto& th : threadsPacientes) {

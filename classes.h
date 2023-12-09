@@ -307,6 +307,70 @@ public:
 
 };
 
+class SalaEspera3 {
+private:
+    vector<Paciente> pacientesEsperando;
+    mutex mtx; // Mutex para sincronização
+public:
+    const int maxSize = 80;
+
+    // Adicionar um paciente à sala de espera
+    bool adicionarPaciente(const Paciente& paciente) {
+        lock_guard<mutex> guard(mtx);
+        if (pacientesEsperando.size() >= maxSize) {
+            cout << "Sala de Espera 3 está cheia. Aguardando vaga para o paciente " << paciente.id << "." << endl;
+            return false;
+        }
+        pacientesEsperando.push_back(paciente);
+        cout << "Paciente " << paciente.id << " adicionado à Sala de Espera 3." << endl;
+        return true;
+    }
+
+    // Remover um paciente da sala de espera
+    void removerPaciente(const Paciente& paciente) {
+        lock_guard<mutex> guard(mtx);
+        auto it = remove_if(pacientesEsperando.begin(), pacientesEsperando.end(), 
+                            [&paciente](const Paciente& p) { return p.id == paciente.id; });
+        if (it != pacientesEsperando.end()) {
+            pacientesEsperando.erase(it, pacientesEsperando.end());
+            cout << "Paciente " << paciente.id << " removido da Sala de Espera 3." << endl;
+        } else {
+            cout << "Paciente " << paciente.id << " não encontrado na Sala de Espera 3." << endl;
+        }
+    }
+
+    // Verificar se a sala está cheia
+    bool salaCheia() {
+        lock_guard<mutex> guard(mtx);
+        return pacientesEsperando.size() >= maxSize;
+    }
+
+    // Verificar se a sala está vazia
+    bool salaVazia() {
+        lock_guard<mutex> guard(mtx);
+        return pacientesEsperando.empty();
+    }
+
+    // Imprimir a quantidade de pacientes na sala
+    void imprimirQuantidadePacientes() {
+        lock_guard<mutex> guard(mtx);
+        cout << "Quantidade de pacientes na Sala de Espera 3: " << pacientesEsperando.size() << endl;
+    }
+
+    // Obter o próximo paciente para atendimento
+    Paciente getProximoPaciente() {
+        lock_guard<mutex> guard(mtx);
+        if (pacientesEsperando.empty()) {
+            throw std::runtime_error("Sala de espera 3 vazia.");
+        }
+        Paciente paciente = pacientesEsperando.front();
+        pacientesEsperando.erase(pacientesEsperando.begin());
+        return paciente;
+    }
+
+    // Outros métodos conforme necessário...
+};
+
 class Enfermeira {
 private:
     atomic<bool> finalizarThread{false};
@@ -316,7 +380,7 @@ private:
 public:
     Enfermeira(atomic<bool>& notif) : notificacao(notif) {}
 
-    void chamarPacienteDaTriagem(SalaEspera2& salaEspera2) {
+    void chamarPacienteDaTriagem(SalaEspera2& salaEspera2, SalaEspera3& salaEspera3) {
         Clinico clinico;
         Ortopedista ortopedista;
 
@@ -341,6 +405,11 @@ public:
 
                     // Adiciona uma pequena pausa para simular o processamento
                     this_thread::sleep_for(chrono::milliseconds(100));
+                     // Aguardar até que haja espaço na SalaEspera3
+                    while (salaEspera3.salaCheia()) {
+                        this_thread::sleep_for(chrono::milliseconds(500)); // Espera um pouco antes de tentar novamente
+                    }
+                    salaEspera3.adicionarPaciente(paciente);
                 } catch (const std::runtime_error& e) {
                     cout << e.what() << endl;
                     this_thread::sleep_for(chrono::milliseconds(100));
