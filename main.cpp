@@ -9,7 +9,7 @@
 
 using namespace std;
 
-const int NUM_PACIENTES = 20;
+const int NUM_PACIENTES = 100;
 
 int main() {
     vector<pthread_t> threadsPacientes;
