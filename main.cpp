@@ -52,14 +52,15 @@ int main() {
     thread enfermeiraThread2(&Enfermeira::chamarPacienteDaTriagem, &enfermeira2, ref(salaEspera2), ref(salaEspera3));
 
     // Thread para médico clínico
-thread clinicoThread([&hospital, &finalizarMedicos]() {
+thread clinicoThread([&hospital, &finalizarMedicos, &salaEspera3]() {
     while (!finalizarMedicos || !hospital.filaClinicosVazia()) {
         cout << "Clínico verificando fila..." << endl;
         if (!hospital.filaClinicosVazia()) {
             Paciente paciente = hospital.getProximoPacienteClinico();
             cout << "Clínico atendendo paciente " << paciente.id << " - Prioridade: " << paciente.prioridadeAtendimento << endl;
             // Simular atendimento
-            this_thread::sleep_for(chrono::milliseconds(200));
+            this_thread::sleep_for(chrono::milliseconds(rand() % 1000 + 500)); // Tempo de atendimento aleatório
+            paciente.gerarDiagnostico(); // Gerar diagnóstico
         } else {
             cout << "Fila de Clínicos vazia, aguardando pacientes..." << endl;
         }
@@ -68,14 +69,15 @@ thread clinicoThread([&hospital, &finalizarMedicos]() {
 });
 
 // Thread para médico ortopedista
-thread ortopedistaThread([&hospital, &finalizarMedicos]() {
+thread ortopedistaThread([&hospital, &finalizarMedicos, &salaEspera3]() {
    while (!finalizarMedicos || !hospital.filaOrtopedistasVazia()) {
         cout << "Ortopedista verificando fila..." << endl;
         if (!hospital.filaOrtopedistasVazia()) {
             Paciente paciente = hospital.getProximoPacienteOrtopedista();
             cout << "Ortopedista atendendo paciente " << paciente.id << " - Prioridade: " << paciente.prioridadeAtendimento << endl;
             // Simular atendimento
-            this_thread::sleep_for(chrono::milliseconds(200));
+            this_thread::sleep_for(chrono::milliseconds(rand() % 1000 + 500)); // Tempo de atendimento aleatório
+            paciente.gerarDiagnostico(); // Gerar diagnóstico
         } else {
             cout << "Fila de Ortopedistas vazia, aguardando pacientes..." << endl;
         }

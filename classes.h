@@ -1,5 +1,3 @@
-// classes.h
-
 #pragma once
 #include <string>
 #include <iostream>
@@ -48,31 +46,32 @@ public:
     int numeroSenha;
     string momentoRetiradaSenha;
     string especialidadeEncaminhamento;
+    string diagnostico;
 
     Paciente();
     void coletarInformacoes();
     void retirarSenha(int numero);
     void imprimirDetalhesSenha();
     void avaliarSinaisVitais();
+    void gerarDiagnostico();
 };
 
-// Implementação do construtor e métodos de Paciente
+
 Paciente::Paciente() {
     sem_init(&semaforoRetiradaSenha, 0, 1);
 }
 
 void Paciente::coletarInformacoes() {
-    // Exemplo de coleta de informações do paciente
+
     cout << endl << "Coletando informações do paciente " << id << "." << endl;
     
-    // Dados simulados para o exemplo
+
     nome = "Paciente_" + to_string(id);
     idade = rand() % 100; // Idade aleatória entre 0 e 99
     motivoVisita = "Motivo_" + to_string(rand() % 5); // Motivo fictício
 
     cout << "Nome: " << nome << ", Idade: " << idade << ", Motivo da Visita: " << motivoVisita << endl;
 
-    // Adicionar mais lógica conforme necessário
 }
 
 void Paciente::retirarSenha(int numero) {
@@ -104,6 +103,18 @@ void Paciente::imprimirDetalhesSenha() {
     }
     cout << ", Momento da retirada: " << momentoRetiradaSenha;
     cout << endl << endl;
+}
+
+void Paciente::gerarDiagnostico() {
+
+    if (motivoVisita.find("Motivo_0") != string::npos) {
+        diagnostico = "Diagnóstico A";
+    } else if (motivoVisita.find("Motivo_1") != string::npos) {
+        diagnostico = "Diagnóstico B";
+    } else {
+        diagnostico = "Diagnóstico C";
+    }
+    cout << "Paciente " << id << " recebeu o diagnóstico: " << diagnostico << endl;
 }
 
 void Paciente::avaliarSinaisVitais() {
@@ -452,7 +463,7 @@ public:
         return paciente;
     }
 
-    // Outros métodos conforme necessário...
+   
 };
 
 class Enfermeira {
@@ -501,7 +512,7 @@ public:
     
     void finalizar() {
         finalizarThread = true;
-        notificacao = true; // Certifique-se de acordar a enfermeira se ela estiver esperando
+        notificacao = true;
     }
 };
 
@@ -548,7 +559,3 @@ public:
         sem_destroy(&semaforoAtendimento); // Destruir o semáforo
     }
 };
-
-
-
-
